@@ -10,6 +10,19 @@ import { CheckboxInput } from '@/ui-component/checkbox/Checkbox'
 // Const
 import { baseURL } from '@/store/constant'
 
+
+// PING: key file for posting expert UI
+// PING: define my own version of Widget for embedding if necessary
+// Flowise's version:
+// https://www.npmjs.com/package/flowise-embed
+// https://www.npmjs.com/package/flowise-embed-react
+// See code in:
+// node_modules/flowise-embed/
+// node_modules/flowise-embed-react/
+
+// PING: a variety of chat UI options
+
+
 function TabPanel(props) {
     const { children, value, index, ...other } = props
     return (

@@ -159,6 +159,7 @@ export default class Start extends Command {
             try {
                 logger.info('Starting Flowise...')
                 await DataSource.init()
+                // PING: App start
                 await Server.start()
             } catch (error) {
                 logger.error('There was an error starting Flowise...', error)

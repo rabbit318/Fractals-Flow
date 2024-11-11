@@ -26,6 +26,9 @@ import { IMetricsProvider } from './Interface.Metrics'
 import { Prometheus } from './metrics/Prometheus'
 import { OpenTelemetry } from './metrics/OpenTelemetry'
 import 'global-agent/bootstrap'
+import expertviewRouter from './expertview-test/expertview'
+
+// PING: key file for server-side App
 
 declare global {
     namespace Express {
@@ -143,7 +146,10 @@ export class App {
             '/api/v1/ping',
             '/api/v1/version',
             '/api/v1/attachments',
-            '/api/v1/metrics'
+            '/api/v1/metrics',
+            '/api/v1/chatflows/',
+            '/api/v1/nodes/',
+            '/api/v1/expertview/'
         ]
         const URL_CASE_INSENSITIVE_REGEX: RegExp = /\/api\/v1\//i
         const URL_CASE_SENSITIVE_REGEX: RegExp = /\/api\/v1\//
@@ -234,6 +240,15 @@ export class App {
         this.app.use('/api/v1', flowiseApiV1Router)
         this.sseStreamer = new SSEStreamer(this.app)
 
+        // Add this before the expertview route
+        this.app.use('/expertview-test', express.static(path.join(__dirname, 'expertview-test')))
+
+        // Then add the expertview route
+        this.app.use('/api/v1/expertview', (req: Request, res: Response, next) => {
+            req.headers['x-request-from'] = 'internal'
+            next()
+        }, expertviewRouter)
+
         // ----------------------------------------
         // Configure number of proxies in Host Environment
         // ----------------------------------------
@@ -280,6 +295,8 @@ export async function getAllChatFlow(): Promise<IChatFlow[]> {
     return await getDataSource().getRepository(ChatFlow).find()
 }
 
+
+// PING: App start
 export async function start(): Promise<void> {
     serverApp = new App()
 

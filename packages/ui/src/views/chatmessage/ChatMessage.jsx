@@ -83,6 +83,8 @@ import { isValidURL, removeDuplicateURL, setLocalStorageChatflow, getLocalStorag
 import useNotifier from '@/utils/useNotifier'
 import FollowUpPromptsCard from '@/ui-component/cards/FollowUpPromptsCard'
 
+
+// PING: key file for posting expert UI
 const messageImageStyle = {
     width: '128px',
     height: '128px',

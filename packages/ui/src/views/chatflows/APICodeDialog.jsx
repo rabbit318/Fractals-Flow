@@ -297,6 +297,7 @@ query({"question": "Hey, how are you?"}).then((response) => {
             if (fileType.includes(',')) fileType = fileType.split(',')[0]
             return `import requests
 
+# PING: use the baseURL from the store
 API_URL = "${baseURL}/api/v1/prediction/${dialogProps.chatflowid}"
 
 # use form data to upload files
