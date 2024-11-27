@@ -1,10 +1,29 @@
-import { useState } from 'react'
-import { ChatMessage } from '../views/chatmessage/ChatMessage'
-import { baseURL } from '@/store/constant'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
+import { Source } from './types'
+import { SimpleChatMessage } from './components/SimpleChatMessage'
 import './expert-view.css'
 
-export const ExpertView = ({ chatflowid }) => {
-    const [sources, setSources] = useState([])
+const ExpertView = () => {
+    const { chatflowid } = useParams()
+    const [sources, setSources] = useState<Source[]>([])
+
+    useEffect(() => {
+        if (!chatflowid) return
+
+        fetch(`/api/v1/chatflows/${chatflowid}/sources`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-request-from': 'internal'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            setSources(data)
+        })
+    }, [chatflowid])
+
+    if (!chatflowid) return null
 
     return (
         <div className="expert-container">
@@ -20,11 +39,13 @@ export const ExpertView = ({ chatflowid }) => {
                 </div>
             </div>
             <div className="chat-column">
-                <ChatMessage 
-                    chatflowid={chatflowid}
-                    isFullPage={true}
-                />
+                <div className="chat-header">
+                    <h2>Hi there! How can I help?</h2>
+                </div>
+                <SimpleChatMessage chatflowid={chatflowid} />
             </div>
         </div>
     )
 }
+
+export default ExpertView

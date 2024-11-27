@@ -5,73 +5,16 @@
     <link rel="stylesheet" href="/expertview-test/expert-view.css">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom@6/umd/react-router-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <script>
-        window.FLOWISE_API_BASE_URL = '/api/v1'
         window.INTERNAL_REQUEST = true
     </script>
-    <style>
-        /* Add some basic styles to ensure sections are visible */
-        .expert-container {
-            display: flex;
-            height: 100vh;
-            width: 100vw;
-            margin: 0;
-            padding: 0;
-        }
-        .source-column, .chat-column {
-            flex: 1;
-            padding: 20px;
-            border: 1px solid #ccc;
-            min-height: 100%;
-            overflow-y: auto;
-        }
-        .source-column {
-            background: #f5f5f5;
-            border-right: 1px solid #e0e0e0;
-        }
-        h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-        /* Add to existing styles */
-        .chat-feedback {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            padding: 20px;
-            border-top: 1px solid #e0e0e0;
-            margin-top: auto;
-        }
-
-        .vote-button {
-            border: none;
-            background: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
-            transition: all 0.2s;
-            color: #666;
-        }
-
-        .vote-button:hover {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        .vote-button.active {
-            background: #e0e0e0;
-            color: #000;
-        }
-
-        .vote-button svg {
-            display: block;
-        }
-    </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
+        const { BrowserRouter, Routes, Route, useParams } = ReactRouterDOM;
         const { useState, useEffect } = React;
         
         const ThumbUpIcon = () => (
@@ -86,18 +29,147 @@
             </svg>
         );
 
-        const ExpertView = () => {
-            const [sources, setSources] = useState([])
-            const [chatVote, setChatVote] = useState(null)
-            const chatflowid = window.location.pathname.split('/').pop()
-
-            const handleChatVote = (vote) => {
-                setChatVote(vote)
+        const SimpleChatMessage = ({ chatflowid }) => {
+            const [messages, setMessages] = useState([])
+            const [input, setInput] = useState('')
+            const [votes, setVotes] = useState({})
+            
+            const handleVote = async (messageIndex, vote) => {
+                try {
+                    // Toggle vote if clicking the same button
+                    const newVote = votes[messageIndex] === vote ? null : vote;
+                    
+                    // Update local state immediately for UI feedback
+                    setVotes(prev => ({
+                        ...prev,
+                        [messageIndex]: newVote
+                    }));
+                    
+                    // Send vote to backend
+                    await fetch(`/api/v1/chat/${chatflowid}/vote`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-request-from': 'internal'
+                        },
+                        body: JSON.stringify({
+                            messageIndex,
+                            vote: newVote
+                        })
+                    });
+                } catch (error) {
+                    console.error('Error submitting vote:', error);
+                    // Revert vote on error
+                    setVotes(prev => ({
+                        ...prev,
+                        [messageIndex]: votes[messageIndex]
+                    }));
+                }
             }
+            
+            const sendMessage = async () => {
+                if (!input.trim()) return
+                
+                const userMessage = { type: 'user', message: input }
+                setMessages(prev => [...prev, userMessage])
+                setInput('')
+                
+                try {
+                    const response = await fetch(`/api/v1/chat/${chatflowid}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-request-from': 'internal'
+                        },
+                        body: JSON.stringify({ question: input })
+                    })
+                    
+                    const data = await response.json()
+                    const botMessage = { type: 'bot', message: data.text }
+                    setMessages(prev => [...prev, botMessage])
+                } catch (error) {
+                    console.error('Error sending message:', error)
+                }
+            }
+            
+            return (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+                        {messages.map((msg, index) => (
+                            <div key={index} className="message-container">
+                                <div className={`message-bubble ${msg.type === 'user' ? 'user-message' : 'bot-message'}`}>
+                                    {msg.message}
+                                    {msg.type === 'bot' && (
+                                        <div className="feedback-buttons">
+                                            <button 
+                                                onClick={() => handleVote(index, 'up')}
+                                                className={`vote-button ${votes[index] === 'up' ? 'active' : ''}`}
+                                            >
+                                                <ThumbUpIcon />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleVote(index, 'down')}
+                                                className={`vote-button ${votes[index] === 'down' ? 'active' : ''}`}
+                                            >
+                                                <ThumbDownIcon />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div style={{
+                        padding: '20px',
+                        borderTop: '1px solid #e0e0e0',
+                        display: 'flex',
+                        gap: '10px'
+                    }}>
+                        <input
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                            placeholder="Type your message..."
+                            style={{
+                                flex: 1,
+                                padding: '15px',
+                                borderRadius: '8px',
+                                border: '1px solid #e0e0e0',
+                                fontSize: '16px'
+                            }}
+                        />
+                        <button
+                            onClick={sendMessage}
+                            style={{
+                                padding: '15px',
+                                backgroundColor: '#4987FC',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                width: '50px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            ➤
+                        </button>
+                    </div>
+                </div>
+            )
+        }
 
+        const ExpertView = () => {
+            const { chatflowid } = useParams()
+            const [sources, setSources] = useState([])
+            
             useEffect(() => {
-                // Fetch sources from API
-                fetch(`${window.FLOWISE_API_BASE_URL}/chatflows/${chatflowid}/sources`, {
+                if (!chatflowid) return
+                
+                fetch(`/api/v1/chatflows/${chatflowid}/sources`, {
                     headers: {
                         'Content-Type': 'application/json',
                         'x-request-from': 'internal'
@@ -107,8 +179,10 @@
                 .then(data => {
                     setSources(data)
                 })
-            }, [])
+            }, [chatflowid])
 
+            if (!chatflowid) return null
+            
             return (
                 <div className="expert-container">
                     <div className="source-column">
@@ -123,30 +197,43 @@
                         </div>
                     </div>
                     <div className="chat-column">
-                        <h2>Chat Interface</h2>
-                        <div className="chat-content">Chat content will go here</div>
-                        <div className="chat-feedback">
-                            <button 
-                                onClick={() => handleChatVote('up')}
-                                className={`vote-button ${chatVote === 'up' ? 'active' : ''}`}
-                                title="Helpful"
-                            >
-                                <ThumbUpIcon />
-                            </button>
-                            <button 
-                                onClick={() => handleChatVote('down')}
-                                className={`vote-button ${chatVote === 'down' ? 'active' : ''}`}
-                                title="Not Helpful"
-                            >
-                                <ThumbDownIcon />
-                            </button>
+                        <div style={{ 
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: '100%',
+                            background: 'white'
+                        }}>
+                            <div style={{
+                                padding: '20px',
+                                borderBottom: '1px solid #e0e0e0',
+                                background: '#4987FC',
+                                color: 'white'
+                            }}>
+                                <h2 style={{ margin: 0 }}>Hi there! How can I help?</h2>
+                            </div>
+                            
+                            <div style={{
+                                flex: 1,
+                                overflowY: 'auto',
+                                padding: '20px'
+                            }}>
+                                <SimpleChatMessage 
+                                    chatflowid={chatflowid}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
             )
         }
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<ExpertView />)
+        ReactDOM.createRoot(document.getElementById('root')).render(
+            <BrowserRouter basename="/expertview">
+                <Routes>
+                    <Route path="/:chatflowid" element={<ExpertView />} />
+                </Routes>
+            </BrowserRouter>
+        )
     </script>
 </body>
 </html>

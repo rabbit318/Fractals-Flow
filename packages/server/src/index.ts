@@ -240,10 +240,11 @@ export class App {
         this.app.use('/api/v1', flowiseApiV1Router)
         this.sseStreamer = new SSEStreamer(this.app)
 
+        // PING: Check if expertview-test is working here
         // Add this before the expertview route
         this.app.use('/expertview-test', express.static(path.join(__dirname, 'expertview-test')))
 
-        // Then add the expertview route
+        //Then add the expertview route
         this.app.use('/api/v1/expertview', (req: Request, res: Response, next) => {
             req.headers['x-request-from'] = 'internal'
             next()
