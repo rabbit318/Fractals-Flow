@@ -11,6 +11,8 @@ import {
     IconFiles
 } from '@tabler/icons-react'
 
+// PING: MAIN PAGE DASHBOARD; COMMENT OUT FUNCTIONALITIES THAT I DON'T WANT TO TOUCH NOW
+
 // constant
 const icons = { IconUsersGroup, IconHierarchy, IconBuildingStore, IconKey, IconTool, IconLock, IconRobot, IconVariable, IconFiles }
 
@@ -78,22 +80,22 @@ const dashboard = {
         //     icon: icons.IconVariable,
         //     breadcrumbs: true
         // },
-        // {
-        //     id: 'apikey',
-        //     title: 'API Keys',
-        //     type: 'item',
-        //     url: '/apikey',
-        //     icon: icons.IconKey,
-        //     breadcrumbs: true
-        // },
-        // {
-        //     id: 'document-stores',
-        //     title: 'Document Stores',
-        //     type: 'item',
-        //     url: '/document-stores',
-        //     icon: icons.IconFiles,
-        //     breadcrumbs: true
-        // }
+        {
+            id: 'apikey',
+            title: 'API Keys',
+            type: 'item',
+            url: '/apikey',
+            icon: icons.IconKey,
+            breadcrumbs: true
+        },
+        {
+            id: 'document-stores',
+            title: 'Document Stores',
+            type: 'item',
+            url: '/document-stores',
+            icon: icons.IconFiles,
+            breadcrumbs: true
+        }
     ]
 }
 
